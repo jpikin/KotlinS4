@@ -187,12 +187,12 @@ fun readCommand(input: String): Command {
     val regexShow = Regex("""show ([A-z]+)""")
     val regexAddValues = Regex("""(addPhone|addEmail) ([A-z]+) (.+)""")
     val regexFind = Regex("""find (.+)""")
-    val regexExport = Regex("""(export) (.+)""")
+    val regexExportDir = Regex("""export (/?[A-z]+/)""")
 
 
     return when {
-        regexExport.matches(input) -> {
-            val matchResult = regexExport.find(input)!!
+        regexExportDir.matches(input) -> {
+            val matchResult = regexExportDir.find(input)!!
             val value = matchResult.groupValues[1]
             Export(value)
         }
