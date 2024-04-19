@@ -1,3 +1,6 @@
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileWriter
 
 fun main() {
     val contacts = ArrayList<Person>()
@@ -24,8 +27,17 @@ fun main() {
                         when (command) {
                             is Export -> {
                                 val com = input?.split(" ")
-                                val adress = com?.get(1) ?: ""
-                                export(adress)
+                                try {
+                                    export(contacts, com?.get(1) ?: "")
+                                }
+                                catch (e: FileNotFoundException) {
+                                    e.stackTrace
+                                }
+                            }
+
+                            is ShowCommand -> {
+                                val com = input?.split(" ")
+                                showList(contacts, com?.get(1))
                             }
 
                             is Find -> {
@@ -44,11 +56,6 @@ fun main() {
                                 } else {
                                     addInfo(contacts, name, "", value)
                                 }
-                            }
-
-                            is ShowCommand -> {
-                                val com = input?.split(" ")
-                                showList(contacts, com?.get(1))
                             }
 
                             is AddValues -> {
@@ -79,8 +86,44 @@ fun main() {
     }
 }
 
-fun export(adress: String) {
+fun export(contacts: ArrayList<Person>, adress: String) {
+    val directory = File(adress)
+    if (!directory.exists()) {
+        directory.mkdirs()
+    }
+    val file = File(directory,"newJson.json")
+    val text: String = toJson(contacts)
+    FileWriter(file).use {it.write(text)}
 
+}
+fun toJson(list: ArrayList<Person>):String{
+    var str = "["
+    for (contact in list)
+        str += "{\"name\": \"${contact.name}\", \"phones\": ${getInfo(contact.phones)}, \"emails\": ${getInfo(contact.emails)}},"
+    str = replaceLastChar(str, ']')
+    println(str)
+    return str
+}
+
+fun getInfo(contact: ArrayList<String>): String {
+    if (contact.isEmpty()){return "[]"}
+    else {
+        var output = "["
+        for(phone in contact)
+            output += "\"$phone\","
+        output = replaceLastChar(output,']')
+        return output
+    }
+
+}
+
+fun replaceLastChar(input: String, newChar: Char): String {
+    if (input.isEmpty()) return input
+    val lastIndex = input.length - 1
+    val updatedString = StringBuilder(input).apply {
+        setCharAt(lastIndex, newChar)
+    }
+    return updatedString.toString()
 }
 
 fun findPerson(list: ArrayList<Person>, value: String) {
@@ -144,9 +187,16 @@ fun readCommand(input: String): Command {
     val regexShow = Regex("""show ([A-z]+)""")
     val regexAddValues = Regex("""(addPhone|addEmail) ([A-z]+) (.+)""")
     val regexFind = Regex("""find (.+)""")
+    val regexExport = Regex("""(export) (.+)""")
 
 
     return when {
+        regexExport.matches(input) -> {
+            val matchResult = regexExport.find(input)!!
+            val value = matchResult.groupValues[1]
+            Export(value)
+        }
+
         regexFind.matches(input) -> {
             val matchResult = regexFind.find(input)!!
             val value = matchResult.groupValues[1]
@@ -175,6 +225,7 @@ fun readCommand(input: String): Command {
             throw IllegalArgumentException("Invalid command format")
         }
     }
+
 }
 
 
